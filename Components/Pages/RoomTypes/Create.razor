@@ -1,0 +1,44 @@
+@page "/roomtypes/create"
+@inject NavigationManager Navigation
+
+<PageTitle>Add Room Type - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Add New Room Type</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudForm @ref="form" @bind-IsValid="@success">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newRoomType.TypeName" Label="Type Name" Required="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField @bind-Value="newRoomType.Capacity" Label="Capacity (persons)" Required="true" Variant="Variant.Outlined" Min="1" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField @bind-Value="newRoomType.PricePerNight" Label="Price Per Night" Required="true" Variant="Variant.Outlined"
+                                 Adornment="Adornment.Start" AdornmentText="$" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="newRoomType.Description" Label="Description" Lines="3" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="my-4" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveRoomType" Disabled="@(!success)" Class="mr-2">Save</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/roomtypes">Cancel</MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private RoomTypeCRUD roomTypeCrud = new RoomTypeCRUD();
+    private RoomType newRoomType = new RoomType { Capacity = 1 };
+    private MudForm form = null!;
+    private bool success = false;
+
+    private void SaveRoomType()
+    {
+        roomTypeCrud.CreateRoomType(newRoomType);
+        Navigation.NavigateTo("/roomtypes");
+    }
+}

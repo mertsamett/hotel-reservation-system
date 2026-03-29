@@ -1,0 +1,159 @@
+@page "/bookings/create"
+@inject NavigationManager Navigation
+
+<PageTitle>New Booking - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Create New Booking</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudForm @ref="form" @bind-IsValid="@success">
+        <MudGrid>
+            <!-- Customer Selection -->
+            <MudItem xs="12" md="6">
+                <MudSelect @bind-Value="newBooking.CustomerID" Label="Select Customer" Required="true" Variant="Variant.Outlined">
+                    @foreach (var customer in customers)
+                    {
+                        <MudSelectItem Value="@customer.CustomerID">@customer.FullName - @customer.Email</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <!-- Room Selection (Only Available Rooms) -->
+            <MudItem xs="12" md="6">
+                <MudSelect @bind-Value="newBooking.RoomID" Label="Select Room (Available Only)" Required="true" Variant="Variant.Outlined"
+                           T="int" @bind-Value:after="OnRoomSelectedAsync">
+                    @foreach (var room in availableRooms)
+                    {
+                        <MudSelectItem Value="@room.RoomID">
+                            Room @room.RoomNumber - @room.RoomType?.TypeName ($@room.RoomType?.PricePerNight/night)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <!-- Check-in Date -->
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="checkInDate" Label="Check-in Date" Required="true" Variant="Variant.Outlined"
+                               MinDate="DateTime.Today" @bind-Date:after="CalculateTotalAsync" />
+            </MudItem>
+
+            <!-- Check-out Date -->
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="checkOutDate" Label="Check-out Date" Required="true" Variant="Variant.Outlined"
+                               MinDate="@(checkInDate?.AddDays(1) ?? DateTime.Today.AddDays(1))" @bind-Date:after="CalculateTotalAsync" />
+            </MudItem>
+
+            <!-- Staff Selection -->
+            <MudItem xs="12" md="6">
+                <MudSelect @bind-Value="newBooking.StaffID" Label="Booking Staff" Variant="Variant.Outlined">
+                    <MudSelectItem Value="@((int?)null)">-- Select Staff --</MudSelectItem>
+                    @foreach (var staff in staffList)
+                    {
+                        <MudSelectItem Value="@((int?)staff.StaffID)">@staff.FullName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <!-- Total Price Display -->
+            <MudItem xs="12" md="6">
+                <MudTextField Value="@($"${calculatedTotal:F2}")" Label="Total Price" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudItem>
+
+            <!-- Notes -->
+            <MudItem xs="12">
+                <MudTextField @bind-Value="newBooking.Notes" Label="Notes" Lines="3" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+
+        <!-- Booking Summary -->
+        @if (selectedRoom != null && checkInDate.HasValue && checkOutDate.HasValue)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                <b>Booking Summary:</b> @selectedRoom.RoomType?.TypeName (Room @selectedRoom.RoomNumber)
+                for @nightCount night(s) = <b>$@calculatedTotal</b>
+            </MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveBooking"
+                   Disabled="@(!success || calculatedTotal <= 0)" Class="mr-2">Create Booking</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/bookings">Cancel</MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private BookingCRUD bookingCrud = new BookingCRUD();
+    private CustomerCRUD customerCrud = new CustomerCRUD();
+    private RoomCRUD roomCrud = new RoomCRUD();
+    private StaffCRUD staffCrud = new StaffCRUD();
+
+    private Booking newBooking = new Booking();
+    private List<Customer> customers = new List<Customer>();
+    private List<Room> availableRooms = new List<Room>();
+    private List<Staff> staffList = new List<Staff>();
+    private Room? selectedRoom;
+
+    private DateTime? checkInDate = DateTime.Today;
+    private DateTime? checkOutDate = DateTime.Today.AddDays(1);
+    private int nightCount = 1;
+    private decimal calculatedTotal = 0;
+
+    private MudForm form = null!;
+    private bool success = false;
+
+    protected override void OnInitialized()
+    {
+        // Load data
+        customers = customerCrud.GetAllCustomers();
+        availableRooms = roomCrud.GetAvailableRooms(); // Only available rooms - LINQ WHERE example
+        staffList = staffCrud.GetAllStaff();
+    }
+
+    private void OnRoomSelectedAsync()
+    {
+        selectedRoom = availableRooms.FirstOrDefault(r => r.RoomID == newBooking.RoomID);
+        CalculateTotalAsync();
+    }
+
+    private void CalculateTotalAsync()
+    {
+        if (checkInDate.HasValue && checkOutDate.HasValue && selectedRoom?.RoomType != null)
+        {
+            nightCount = (checkOutDate.Value - checkInDate.Value).Days;
+            if (nightCount > 0)
+            {
+                calculatedTotal = nightCount * selectedRoom.RoomType.PricePerNight;
+            }
+        }
+    }
+
+    private void SaveBooking()
+    {
+        try
+        {
+            if (checkInDate.HasValue && checkOutDate.HasValue)
+            {
+                newBooking.CheckInDate = checkInDate.Value;
+                newBooking.CheckOutDate = checkOutDate.Value;
+                newBooking.TotalPrice = calculatedTotal;
+
+                // TRANSACTION-based INSERT - Creates booking and updates room availability
+                var result = bookingCrud.CreateBooking(newBooking);
+
+                if (result)
+                {
+                    Navigation.NavigateTo("/bookings");
+                }
+                else
+                {
+                    Console.WriteLine("Booking failed - room may not be available");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating booking: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,73 @@
+@page "/customers/create"
+@inject NavigationManager Navigation
+
+<PageTitle>Add Customer - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Add New Customer</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudForm @ref="form" @bind-IsValid="@success">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.FirstName" Label="First Name" Required="true"
+                              RequiredError="First name is required" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.LastName" Label="Last Name" Required="true"
+                              RequiredError="Last name is required" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.Email" Label="Email" Required="true" InputType="InputType.Email"
+                              RequiredError="Email is required" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.Phone" Label="Phone" Required="true"
+                              RequiredError="Phone is required" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="newCustomer.Address" Label="Address" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.City" Label="City" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newCustomer.Country" Label="Country" Required="true"
+                              RequiredError="Country is required" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="dateOfBirth" Label="Date of Birth" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="my-4" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveCustomer"
+                   Disabled="@(!success)" Class="mr-2">Save Customer</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/customers">Cancel</MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private CustomerCRUD customerCrud = new CustomerCRUD();
+    private Customer newCustomer = new Customer();
+    private DateTime? dateOfBirth;
+    private MudForm form = null!;
+    private bool success = false;
+
+    private void SaveCustomer()
+    {
+        try
+        {
+            if (dateOfBirth.HasValue)
+                newCustomer.DateOfBirth = dateOfBirth.Value;
+
+            // LINQ INSERT example
+            customerCrud.CreateCustomer(newCustomer);
+            Navigation.NavigateTo("/customers");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating customer: {ex.Message}");
+        }
+    }
+}

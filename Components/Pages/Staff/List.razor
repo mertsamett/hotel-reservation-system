@@ -1,0 +1,74 @@
+@page "/staff"
+
+<PageTitle>Staff - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Staff Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudTextField @bind-Value="searchTerm" Label="Search Staff" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/staff/create"
+                       StartIcon="@Icons.Material.Filled.PersonAdd">Add Staff</MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@FilteredStaff" Hover="true" Striped="true" Class="mt-4" Dense="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Phone</MudTh>
+            <MudTh>Department</MudTh>
+            <MudTh>Salary</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name"><b>@context.FullName</b></MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Phone">@context.Phone</MudTd>
+            <MudTd DataLabel="Department">
+                <MudChip T="string" Color="Color.Primary" Size="Size.Small">@context.Department?.DepartmentName</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Salary">$@context.Salary</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               Href="@($"/staff/edit/{context.StaffID}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteStaff(context.StaffID))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private StaffCRUD staffCrud = new StaffCRUD();
+    private List<Staff> staffList = new List<Staff>();
+    private string searchTerm = "";
+
+    protected override void OnInitialized()
+    {
+        staffList = staffCrud.GetAllStaff();
+    }
+
+    private IEnumerable<Staff> FilteredStaff
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return staffList;
+
+            return staffList.Where(s =>
+                s.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private void DeleteStaff(int staffId)
+    {
+        staffCrud.DeleteStaff(staffId);
+        staffList = staffCrud.GetAllStaff();
+    }
+}

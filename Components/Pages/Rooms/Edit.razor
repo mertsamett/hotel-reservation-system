@@ -1,0 +1,77 @@
+@page "/rooms/edit/{RoomId:int}"
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Room - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Edit Room</MudText>
+
+@if (room != null)
+{
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudForm @ref="form" @bind-IsValid="@success">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="room.RoomNumber" Label="Room Number" Required="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="room.RoomTypeID" Label="Room Type" Required="true" Variant="Variant.Outlined">
+                        @foreach (var type in roomTypes)
+                        {
+                            <MudSelectItem Value="@type.RoomTypeID">@type.TypeName - $@type.PricePerNight/night</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="room.Floor" Label="Floor" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSwitch Value="IsRoomAvailable" ValueChanged="@((bool val) => { room.IsAvailable = val; IsRoomAvailable = val; })" T="bool" Label="Available" Color="Color.Success" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="room.Notes" Label="Notes" Lines="3" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateRoom" Class="mr-2">Update Room</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/rooms">Cancel</MudButton>
+        </MudForm>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Error">Room not found</MudAlert>
+}
+
+@code {
+    [Parameter]
+    public int RoomId { get; set; }
+
+    private RoomCRUD roomCrud = new RoomCRUD();
+    private RoomTypeCRUD roomTypeCrud = new RoomTypeCRUD();
+
+    private Room? room;
+    private List<RoomType> roomTypes = new List<RoomType>();
+    private MudForm form = null!;
+    private bool success = false;
+
+    private bool IsRoomAvailable { get; set; }
+
+    protected override void OnInitialized()
+    {
+        room = roomCrud.GetRoomById(RoomId);
+        roomTypes = roomTypeCrud.GetAllRoomTypes();
+        IsRoomAvailable = room?.IsAvailable ?? true;
+    }
+
+    private void UpdateRoom()
+    {
+        if (room != null)
+        {
+            // LINQ UPDATE example
+            roomCrud.UpdateRoom(room);
+            Navigation.NavigateTo("/rooms");
+        }
+    }
+}

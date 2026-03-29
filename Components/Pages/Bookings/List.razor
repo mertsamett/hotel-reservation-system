@@ -1,0 +1,154 @@
+@page "/bookings"
+
+<PageTitle>Bookings - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Booking Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudSelect @bind-Value="filterStatus" Label="Filter by Status" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("All")">All Bookings</MudSelectItem>
+                <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                <MudSelectItem Value="@("Completed")">Completed</MudSelectItem>
+                <MudSelectItem Value="@("Cancelled")">Cancelled</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="searchTerm" Label="Search (Customer/Room)" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/bookings/create"
+                       StartIcon="@Icons.Material.Filled.AddBox">New Booking</MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@FilteredBookings" Hover="true" Striped="true" Class="mt-4" Dense="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Customer</MudTh>
+            <MudTh>Room</MudTh>
+            <MudTh>Check-in</MudTh>
+            <MudTh>Check-out</MudTh>
+            <MudTh>Nights</MudTh>
+            <MudTh>Total</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.BookingID</MudTd>
+            <MudTd DataLabel="Customer"><b>@context.Customer?.FullName</b></MudTd>
+            <MudTd DataLabel="Room">@context.Room?.RoomNumber (@context.Room?.RoomType?.TypeName)</MudTd>
+            <MudTd DataLabel="Check-in">@context.CheckInDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Check-out">@context.CheckOutDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Nights">@context.NightCount</MudTd>
+            <MudTd DataLabel="Total"><b>$@context.TotalPrice</b></MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="@GetStatusColor(context.BookingStatus)" Size="Size.Small">@context.BookingStatus</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                @if (context.BookingStatus == "Active")
+                {
+                    <MudTooltip Text="Checkout">
+                        <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Success" Size="Size.Small"
+                                       OnClick="@(() => CheckoutBooking(context.BookingID))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Cancel">
+                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Color="Color.Warning" Size="Size.Small"
+                                       OnClick="@(() => CancelBooking(context.BookingID))" />
+                    </MudTooltip>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               Href="@($"/bookings/edit/{context.BookingID}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteBooking(context.BookingID))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private BookingCRUD bookingCrud = new BookingCRUD();
+    private List<Booking> bookings = new List<Booking>();
+    private string filterStatus = "All";
+    private string searchTerm = "";
+
+    protected override void OnInitialized()
+    {
+        LoadBookings();
+    }
+
+    private void LoadBookings()
+    {
+        // LINQ with JOIN - Getting bookings with Customer and Room data
+        bookings = bookingCrud.GetAllBookings();
+    }
+
+    private IEnumerable<Booking> FilteredBookings
+    {
+        get
+        {
+            var filtered = bookings.AsEnumerable();
+
+            // LINQ WHERE - Filtering by status
+            if (filterStatus != "All")
+                filtered = filtered.Where(b => b.BookingStatus == filterStatus);
+
+            // LINQ WHERE with CONTAINS - Search filtering
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                filtered = filtered.Where(b =>
+                    (b.Customer?.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (b.Room?.RoomNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            // LINQ ORDERBY - Sorting
+            return filtered.OrderByDescending(b => b.BookingDate);
+        }
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Active" => Color.Success,
+            "Completed" => Color.Info,
+            "Cancelled" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private void CheckoutBooking(int bookingId)
+    {
+        // Transaction-based checkout
+        var result = bookingCrud.CheckoutBooking(bookingId);
+        if (result)
+        {
+            LoadBookings();
+        }
+    }
+
+    private void CancelBooking(int bookingId)
+    {
+        // Transaction-based cancellation
+        var result = bookingCrud.CancelBooking(bookingId);
+        if (result)
+        {
+            LoadBookings();
+        }
+    }
+
+    private void DeleteBooking(int bookingId)
+    {
+        // LINQ DELETE
+        var result = bookingCrud.DeleteBooking(bookingId);
+        if (result)
+        {
+            LoadBookings();
+        }
+    }
+}

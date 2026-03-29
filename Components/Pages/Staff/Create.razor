@@ -1,0 +1,63 @@
+@page "/staff/create"
+@inject NavigationManager Navigation
+
+<PageTitle>Add Staff - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Add New Staff</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudForm @ref="form" @bind-IsValid="@success">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newStaff.FirstName" Label="First Name" Required="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newStaff.LastName" Label="Last Name" Required="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newStaff.Email" Label="Email" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="newStaff.Phone" Label="Phone" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect @bind-Value="newStaff.DepartmentID" Label="Department" Required="true" Variant="Variant.Outlined">
+                    @foreach (var dept in departments)
+                    {
+                        <MudSelectItem Value="@dept.DepartmentID">@dept.DepartmentName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField @bind-Value="newStaff.Salary" Label="Salary" Variant="Variant.Outlined"
+                                 Adornment="Adornment.Start" AdornmentText="$" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="my-4" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveStaff" Disabled="@(!success)" Class="mr-2">Save Staff</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/staff">Cancel</MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private StaffCRUD staffCrud = new StaffCRUD();
+    private DepartmentCRUD deptCrud = new DepartmentCRUD();
+
+    private Staff newStaff = new Staff();
+    private List<Department> departments = new List<Department>();
+    private MudForm form = null!;
+    private bool success = false;
+
+    protected override void OnInitialized()
+    {
+        departments = deptCrud.GetAllDepartments();
+    }
+
+    private void SaveStaff()
+    {
+        staffCrud.CreateStaff(newStaff);
+        Navigation.NavigateTo("/staff");
+    }
+}

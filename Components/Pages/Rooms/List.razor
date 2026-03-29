@@ -1,0 +1,114 @@
+@page "/rooms"
+
+<PageTitle>Rooms - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Room Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="searchTerm" Label="Search Room" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect @bind-Value="filterStatus" Label="Filter by Status" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("All")">All Rooms</MudSelectItem>
+                <MudSelectItem Value="@("Available")">Available Only</MudSelectItem>
+                <MudSelectItem Value="@("Occupied")">Occupied Only</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/rooms/create"
+                       StartIcon="@Icons.Material.Filled.Add">Add New Room</MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@FilteredRooms" Hover="true" Striped="true" Class="mt-4" Dense="true">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Room, object>(x => x.RoomNumber)">Room No</MudTableSortLabel></MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh>Capacity</MudTh>
+            <MudTh>Price/Night</MudTh>
+            <MudTh>Floor</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Room No"><MudText Typo="Typo.body1"><b>@context.RoomNumber</b></MudText></MudTd>
+            <MudTd DataLabel="Type">@context.RoomType?.TypeName</MudTd>
+            <MudTd DataLabel="Capacity">@context.RoomType?.Capacity persons</MudTd>
+            <MudTd DataLabel="Price">$@context.RoomType?.PricePerNight</MudTd>
+            <MudTd DataLabel="Floor">@context.Floor</MudTd>
+            <MudTd DataLabel="Status">
+                @if (context.IsAvailable == true)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Available</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Error" Size="Size.Small">Occupied</MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               Href="@($"/rooms/edit/{context.RoomID}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteRoom(context.RoomID))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private RoomCRUD roomCrud = new RoomCRUD();
+    private List<Room> rooms = new List<Room>();
+    private string searchTerm = "";
+    private string filterStatus = "All";
+
+    protected override void OnInitialized()
+    {
+        LoadRooms();
+    }
+
+    private void LoadRooms()
+    {
+        rooms = roomCrud.GetAllRooms();
+    }
+
+    private IEnumerable<Room> FilteredRooms
+    {
+        get
+        {
+            var filtered = rooms.AsEnumerable();
+
+            // Filter by search term
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                filtered = filtered.Where(r =>
+                    r.RoomNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (r.RoomType?.TypeName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            // Filter by status
+            if (filterStatus == "Available")
+                filtered = filtered.Where(r => r.IsAvailable == true);
+            else if (filterStatus == "Occupied")
+                filtered = filtered.Where(r => r.IsAvailable != true);
+
+            return filtered.OrderBy(r => r.RoomNumber);
+        }
+    }
+
+    private void DeleteRoom(int roomId)
+    {
+        var result = roomCrud.DeleteRoom(roomId);
+        if (result)
+        {
+            LoadRooms();
+        }
+    }
+}

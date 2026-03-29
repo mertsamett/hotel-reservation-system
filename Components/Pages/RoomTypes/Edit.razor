@@ -1,0 +1,57 @@
+@page "/roomtypes/edit/{RoomTypeId:int}"
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Room Type - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Edit Room Type</MudText>
+
+@if (roomType != null)
+{
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudForm @ref="form">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="roomType.TypeName" Label="Type Name" Required="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="roomType.Capacity" Label="Capacity (persons)" Required="true" Variant="Variant.Outlined" Min="1" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="roomType.PricePerNight" Label="Price Per Night" Required="true" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentText="$" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="roomType.Description" Label="Description" Lines="3" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateRoomType" Class="mr-2">Update</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/roomtypes">Cancel</MudButton>
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public int RoomTypeId { get; set; }
+
+    private RoomTypeCRUD roomTypeCrud = new RoomTypeCRUD();
+    private RoomType? roomType;
+    private MudForm form = null!;
+
+    protected override void OnInitialized()
+    {
+        roomType = roomTypeCrud.GetRoomTypeById(RoomTypeId);
+    }
+
+    private void UpdateRoomType()
+    {
+        if (roomType != null)
+        {
+            roomTypeCrud.UpdateRoomType(roomType);
+            Navigation.NavigateTo("/roomtypes");
+        }
+    }
+}

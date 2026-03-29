@@ -1,0 +1,368 @@
+@page "/"
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Enums
+
+<PageTitle>Dashboard - Hotel Reservation System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+
+<!-- Statistics Cards -->
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <MudText Typo="Typo.h6" Color="Color.Surface">Total Rooms</MudText>
+            <MudText Typo="Typo.h3" Color="Color.Surface">@totalRooms</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <MudText Typo="Typo.h6" Color="Color.Surface">Available Rooms</MudText>
+            <MudText Typo="Typo.h3" Color="Color.Surface">@availableRooms</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+            <MudText Typo="Typo.h6" Color="Color.Surface">Occupied Rooms</MudText>
+            <MudText Typo="Typo.h3" Color="Color.Surface">@occupiedRooms</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <MudText Typo="Typo.h6" Color="Color.Surface">Active Bookings</MudText>
+            <MudText Typo="Typo.h3" Color="Color.Surface">@activeBookings</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<!-- Charts Section -->
+<MudGrid Class="mt-4">
+    <!-- Room Occupancy Pie Chart -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Room Occupancy by Type (Pie Chart)</MudText>
+            <Chart Config="roomOccupancyConfig"></Chart>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Customers by Country Pie Chart -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Customers by Country (Pie Chart)</MudText>
+            <Chart Config="customerCountryConfig"></Chart>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudGrid Class="mt-4">
+    <!-- Room Occupancy by Type - GROUPING Example Table -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Room Occupancy by Type (Grouping Table)</MudText>
+            <MudSimpleTable Hover="true" Striped="true">
+                <thead>
+                    <tr>
+                        <th>Room Type</th>
+                        <th>Total</th>
+                        <th>Available</th>
+                        <th>Occupied</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stat in roomStats)
+                    {
+                        <tr>
+                            <td>@stat.TypeName</td>
+                            <td>@stat.TotalCount</td>
+                            <td><MudChip T="string" Color="Color.Success" Size="Size.Small">@stat.AvailableCount</MudChip></td>
+                            <td><MudChip T="string" Color="Color.Error" Size="Size.Small">@stat.OccupiedCount</MudChip></td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Customer Statistics - GROUPING Example Table -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Customers by Country (Grouping Table)</MudText>
+            <MudSimpleTable Hover="true" Striped="true">
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Customer Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stat in customerCountryStats)
+                    {
+                        <tr>
+                            <td>@stat.Country</td>
+                            <td><MudChip T="string" Color="Color.Primary" Size="Size.Small">@stat.CustomerCount</MudChip></td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudGrid Class="mt-4">
+    <!-- Today's Check-ins -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.Login" /> Today's Check-ins
+            </MudText>
+            @if (todayCheckIns.Any())
+            {
+                <MudList T="Booking">
+                    @foreach (var booking in todayCheckIns)
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.Person">
+                            @booking.Customer?.FullName - Room @booking.Room?.RoomNumber
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No check-ins scheduled for today</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Today's Check-outs -->
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.Logout" /> Today's Check-outs
+            </MudText>
+            @if (todayCheckOuts.Any())
+            {
+                <MudList T="Booking">
+                    @foreach (var booking in todayCheckOuts)
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.Person">
+                            @booking.Customer?.FullName - Room @booking.Room?.RoomNumber
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No check-outs scheduled for today</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<!-- Recent Bookings -->
+<MudPaper Elevation="2" Class="pa-4 mt-4">
+    <MudText Typo="Typo.h6" Class="mb-3">Recent Bookings (JOIN Example)</MudText>
+    <MudTable Items="@recentBookings" Hover="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>Booking ID</MudTh>
+            <MudTh>Customer</MudTh>
+            <MudTh>Room</MudTh>
+            <MudTh>Room Type</MudTh>
+            <MudTh>Check-in</MudTh>
+            <MudTh>Check-out</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Total</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.BookingID</MudTd>
+            <MudTd>@context.Customer?.FullName</MudTd>
+            <MudTd>@context.Room?.RoomNumber</MudTd>
+            <MudTd>@context.Room?.RoomType?.TypeName</MudTd>
+            <MudTd>@context.CheckInDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>@context.CheckOutDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                <MudChip T="string" Color="@GetStatusColor(context.BookingStatus)" Size="Size.Small">
+                    @context.BookingStatus
+                </MudChip>
+            </MudTd>
+            <MudTd>$@context.TotalPrice</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@* ============================================================================
+   HOME.RAZOR - Dashboard Sayfasi
+   Otel yonetim sisteminin ana sayfasi, istatistikler ve grafikler burada
+   LINQ sorgulari ve GROUPBY ornekleri iceriyor
+   ChartJs.Blazor ile pie chart (pasta grafik) gosteriyoruz
+   ============================================================================ *@
+
+@code {
+    // =========================================================================
+    // CRUD Instances (Ornekleri)
+    // Her entity icin ayri bir CRUD sinifi var, veritabani islemleri bunlarla yapiliyor
+    // =========================================================================
+    private RoomCRUD roomCrud = new RoomCRUD();
+    private BookingCRUD bookingCrud = new BookingCRUD();
+    private CustomerCRUD customerCrud = new CustomerCRUD();
+
+    // =========================================================================
+    // Istatistik degiskenleri - Kartlarda gosteriyoruz bunlari
+    // =========================================================================
+    private int totalRooms = 0;        // Toplam oda sayisi
+    private int availableRooms = 0;    // Musait oda sayisi
+    private int occupiedRooms = 0;     // Dolu oda sayisi
+    private int activeBookings = 0;    // Aktif rezervasyon sayisi
+
+    // =========================================================================
+    // Veri listeleri - Tablolar ve grafikler icin
+    // =========================================================================
+    private List<RoomOccupancyStat> roomStats = new List<RoomOccupancyStat>();         // Oda doluluk istatistikleri
+    private List<CustomerCountryStat> customerCountryStats = new List<CustomerCountryStat>(); // Ulkeye gore musteriler
+    private List<Booking> todayCheckIns = new List<Booking>();   // Bugunun girisleri
+    private List<Booking> todayCheckOuts = new List<Booking>();  // Bugunun cikislari
+    private List<Booking> recentBookings = new List<Booking>();  // Son rezervasyonlar
+
+    // =========================================================================
+    // Grafik konfigurasyonlari - ChartJs.Blazor icin
+    // PieConfig pie chart (pasta grafik) icin kullaniliyor
+    // =========================================================================
+    private PieConfig roomOccupancyConfig = new PieConfig();
+    private PieConfig customerCountryConfig = new PieConfig();
+
+    // Rastgele renk uretmek icin - her pasta dilimi farkli renk olsun
+    private Random random = new Random();
+
+    // =========================================================================
+    // OnInitialized - Sayfa yuklendiginde calisir
+    // Blazor lifecycle (yasam dongusu) metodu bu
+    // =========================================================================
+    protected override void OnInitialized()
+    {
+        LoadDashboardData();   // Verileri yukle
+        ConfigureCharts();     // Grafikleri ayarla
+    }
+
+    // =========================================================================
+    // LoadDashboardData - Dashboard verilerini yukle
+    // CRUD metodlarini cagirarak veritabanindan verileri cekiyoruz
+    // =========================================================================
+    private void LoadDashboardData()
+    {
+        try
+        {
+            // Temel istatistikler - COUNT sorgulari
+            totalRooms = roomCrud.GetTotalRoomCount();
+            availableRooms = roomCrud.GetAvailableRoomCount();
+            occupiedRooms = roomCrud.GetOccupiedRoomCount();
+            activeBookings = bookingCrud.GetActiveBookingCount();
+
+            // Oda doluluk istatistikleri - LINQ GROUPBY ornegi
+            // Oda tipine gore gruplama yapiliyor
+            roomStats = bookingCrud.GetRoomOccupancyStats();
+
+            // Ulkeye gore musteri sayisi - LINQ GROUPBY ornegi
+            // Her ulkeden kac musteri var gosteriyor
+            customerCountryStats = customerCrud.GetCustomerCountByCountry();
+
+            // Bugunun giris ve cikislari - LINQ WHERE ile tarih filtreleme
+            todayCheckIns = bookingCrud.GetTodayCheckIns();
+            todayCheckOuts = bookingCrud.GetTodayCheckOuts();
+
+            // Son 10 rezervasyon - LINQ Take ile sinirlandirma
+            recentBookings = bookingCrud.GetAllBookings().Take(10).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Hata olursa konsola yaz
+            Console.WriteLine($"Dashboard veri yukleme hatasi: {ex.Message}");
+        }
+    }
+
+    // =========================================================================
+    // ConfigureCharts - Grafikleri yapilandir
+    // ChartJs.Blazor kutuphanesini kullaniyoruz
+    // PieConfig ile pie chart (pasta grafik) olusturuyoruz
+    // =========================================================================
+    private void ConfigureCharts()
+    {
+        // Oda doluluk pasta grafigi
+        roomOccupancyConfig.Options = new PieOptions
+        {
+            Responsive = true,   // Ekran boyutuna gore uyarlansin
+            Title = new OptionsTitle
+            {
+                Display = true,
+                Text = "Room Occupancy by Type"
+            }
+        };
+
+        // LINQ Select ile label (etiket) ve data (veri) dizileri olusturuyoruz
+        var roomLabels = roomStats.Select(r => r.TypeName).ToArray();
+        var roomData = roomStats.Select(r => (double)r.TotalCount).ToArray();
+        var roomColors = GenerateColors(roomStats.Count);  // Rastgele renkler
+
+        // Etiketleri ekle
+        foreach (var label in roomLabels)
+            roomOccupancyConfig.Data.Labels.Add(label);
+
+        // Dataset (veri kumesi) olustur ve ekle
+        var roomDataset = new PieDataset<double>(roomData)
+        {
+            BackgroundColor = roomColors
+        };
+        roomOccupancyConfig.Data.Datasets.Add(roomDataset);
+
+        // Ulkeye gore musteri pasta grafigi - ayni mantik
+        customerCountryConfig.Options = new PieOptions
+        {
+            Responsive = true,
+            Title = new OptionsTitle
+            {
+                Display = true,
+                Text = "Customers by Country"
+            }
+        };
+
+        var countryLabels = customerCountryStats.Select(c => c.Country).ToArray();
+        var countryData = customerCountryStats.Select(c => (double)c.CustomerCount).ToArray();
+        var countryColors = GenerateColors(customerCountryStats.Count);
+
+        foreach (var label in countryLabels)
+            customerCountryConfig.Data.Labels.Add(label);
+
+        var countryDataset = new PieDataset<double>(countryData)
+        {
+            BackgroundColor = countryColors
+        };
+        customerCountryConfig.Data.Datasets.Add(countryDataset);
+    }
+
+    // =========================================================================
+    // GenerateColors - Rastgele renkler uret
+    // Her pasta dilimi icin farkli bir rgba renk kodu uretiyor
+    // =========================================================================
+    private string[] GenerateColors(int count)
+    {
+        var colors = new string[count];
+        for (int i = 0; i < count; i++)
+        {
+            // rgba(red, green, blue, alpha) formatinda renk kodu
+            colors[i] = $"rgba({random.Next(0, 256)}, {random.Next(0, 256)}, {random.Next(0, 256)}, 0.7)";
+        }
+        return colors;
+    }
+
+    // =========================================================================
+    // GetStatusColor - Rezervasyon durumuna gore renk dondur
+    // Switch expression (ifade) kullaniyoruz - C# 8.0 ozelligi
+    // =========================================================================
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Active" => Color.Success,      // Yesil
+            "Completed" => Color.Info,      // Mavi
+            "Cancelled" => Color.Error,     // Kirmizi
+            _ => Color.Default              // Varsayilan (default case)
+        };
+    }
+}

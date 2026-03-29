@@ -1,0 +1,72 @@
+@page "/staff/edit/{StaffId:int}"
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Staff - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Edit Staff</MudText>
+
+@if (staff != null)
+{
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudForm @ref="form">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="staff.FirstName" Label="First Name" Required="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="staff.LastName" Label="Last Name" Required="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="staff.Email" Label="Email" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="staff.Phone" Label="Phone" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="staff.DepartmentID" Label="Department" Required="true" Variant="Variant.Outlined">
+                        @foreach (var dept in departments)
+                        {
+                            <MudSelectItem Value="@dept.DepartmentID">@dept.DepartmentName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="staff.Salary" Label="Salary" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentText="$" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateStaff" Class="mr-2">Update Staff</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/staff">Cancel</MudButton>
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public int StaffId { get; set; }
+
+    private StaffCRUD staffCrud = new StaffCRUD();
+    private DepartmentCRUD deptCrud = new DepartmentCRUD();
+
+    private Staff? staff;
+    private List<Department> departments = new List<Department>();
+    private MudForm form = null!;
+
+    protected override void OnInitialized()
+    {
+        staff = staffCrud.GetStaffById(StaffId);
+        departments = deptCrud.GetAllDepartments();
+    }
+
+    private void UpdateStaff()
+    {
+        if (staff != null)
+        {
+            staffCrud.UpdateStaff(staff);
+            Navigation.NavigateTo("/staff");
+        }
+    }
+}

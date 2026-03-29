@@ -1,0 +1,89 @@
+@page "/customers"
+
+<PageTitle>Customers - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Customer Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudTextField @bind-Value="searchTerm" Label="Search Customer (Name or Email)" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/customers/create"
+                       StartIcon="@Icons.Material.Filled.PersonAdd">Add Customer</MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@FilteredCustomers" Hover="true" Striped="true" Class="mt-4" Dense="true">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x => x.LastName)">Name</MudTableSortLabel></MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Phone</MudTh>
+            <MudTh>Country</MudTh>
+            <MudTh>Total Bookings</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name"><b>@context.FullName</b></MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Phone">@context.Phone</MudTd>
+            <MudTd DataLabel="Country">@context.Country</MudTd>
+            <MudTd DataLabel="Bookings">
+                <MudChip T="string" Color="Color.Info" Size="Size.Small">@context.TotalBookings</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               Href="@($"/customers/edit/{context.CustomerID}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteCustomer(context.CustomerID))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private CustomerCRUD customerCrud = new CustomerCRUD();
+    private List<Customer> customers = new List<Customer>();
+    private string searchTerm = "";
+
+    protected override void OnInitialized()
+    {
+        LoadCustomers();
+    }
+
+    private void LoadCustomers()
+    {
+        customers = customerCrud.GetAllCustomers();
+    }
+
+    private IEnumerable<Customer> FilteredCustomers
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return customers;
+
+            // LINQ WHERE with CONTAINS - Filtering example
+            return customers.Where(c =>
+                c.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                c.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                c.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private void DeleteCustomer(int customerId)
+    {
+        // LINQ DELETE example
+        var result = customerCrud.DeleteCustomer(customerId);
+        if (result)
+        {
+            LoadCustomers();
+        }
+    }
+}

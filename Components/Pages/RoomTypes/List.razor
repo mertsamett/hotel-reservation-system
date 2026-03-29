@@ -1,0 +1,51 @@
+@page "/roomtypes"
+
+<PageTitle>Room Types - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Room Type Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/roomtypes/create" Class="mb-4"
+               StartIcon="@Icons.Material.Filled.Add">Add Room Type</MudButton>
+
+    <MudTable Items="@roomTypes" Hover="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>Type Name</MudTh>
+            <MudTh>Capacity</MudTh>
+            <MudTh>Price/Night</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Type"><b>@context.TypeName</b></MudTd>
+            <MudTd DataLabel="Capacity">@context.Capacity persons</MudTd>
+            <MudTd DataLabel="Price"><MudChip T="string" Color="Color.Success" Size="Size.Small">$@context.PricePerNight</MudChip></MudTd>
+            <MudTd DataLabel="Description">@context.Description</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               Href="@($"/roomtypes/edit/{context.RoomTypeID}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteRoomType(context.RoomTypeID))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private RoomTypeCRUD roomTypeCrud = new RoomTypeCRUD();
+    private List<RoomType> roomTypes = new List<RoomType>();
+
+    protected override void OnInitialized()
+    {
+        roomTypes = roomTypeCrud.GetAllRoomTypes();
+    }
+
+    private void DeleteRoomType(int id)
+    {
+        var result = roomTypeCrud.DeleteRoomType(id);
+        if (result)
+        {
+            roomTypes = roomTypeCrud.GetAllRoomTypes();
+        }
+    }
+}

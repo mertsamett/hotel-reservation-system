@@ -1,0 +1,145 @@
+@page "/bookings/edit/{BookingId:int}"
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Booking - Hotel System</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Edit Booking</MudText>
+
+@if (booking != null)
+{
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudAlert Severity="@GetStatusSeverity(booking.BookingStatus)" Class="mb-4">
+            <b>Status:</b> @booking.BookingStatus
+            @if (booking.BookingStatus == "Active")
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Success" Size="Size.Small" Class="ml-4"
+                           OnClick="CheckoutBooking">Checkout Now</MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Warning" Size="Size.Small" Class="ml-2"
+                           OnClick="CancelBooking">Cancel Booking</MudButton>
+            }
+        </MudAlert>
+
+        <MudForm @ref="form">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Value="@booking.Customer?.FullName" Label="Customer" Variant="Variant.Outlined" ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Value="@($"Room {booking.Room?.RoomNumber} - {booking.Room?.RoomType?.TypeName}")"
+                                  Label="Room" Variant="Variant.Outlined" ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="checkInDate" Label="Check-in Date" Variant="Variant.Outlined"
+                                   Disabled="@(booking.BookingStatus != "Active")" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="checkOutDate" Label="Check-out Date" Variant="Variant.Outlined"
+                                   Disabled="@(booking.BookingStatus != "Active")" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="booking.TotalPrice" Label="Total Price" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentText="$" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="booking.StaffID" Label="Staff" Variant="Variant.Outlined">
+                        <MudSelectItem Value="@((int?)null)">-- No Staff --</MudSelectItem>
+                        @foreach (var staff in staffList)
+                        {
+                            <MudSelectItem Value="@((int?)staff.StaffID)">@staff.FullName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="booking.Notes" Label="Notes" Lines="3" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateBooking" Class="mr-2"
+                       Disabled="@(booking.BookingStatus != "Active")">Update Booking</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/bookings">Back to List</MudButton>
+        </MudForm>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Error">Booking not found</MudAlert>
+}
+
+@code {
+    [Parameter]
+    public int BookingId { get; set; }
+
+    private BookingCRUD bookingCrud = new BookingCRUD();
+    private StaffCRUD staffCrud = new StaffCRUD();
+
+    private Booking? booking;
+    private List<Staff> staffList = new List<Staff>();
+    private DateTime? checkInDate;
+    private DateTime? checkOutDate;
+    private MudForm form = null!;
+
+    protected override void OnInitialized()
+    {
+        // LINQ with JOIN - Get booking with related data
+        booking = bookingCrud.GetBookingById(BookingId);
+        staffList = staffCrud.GetAllStaff();
+
+        if (booking != null)
+        {
+            checkInDate = booking.CheckInDate;
+            checkOutDate = booking.CheckOutDate;
+        }
+    }
+
+    private Severity GetStatusSeverity(string status)
+    {
+        return status switch
+        {
+            "Active" => Severity.Success,
+            "Completed" => Severity.Info,
+            "Cancelled" => Severity.Error,
+            _ => Severity.Normal
+        };
+    }
+
+    private void UpdateBooking()
+    {
+        if (booking != null && checkInDate.HasValue && checkOutDate.HasValue)
+        {
+            booking.CheckInDate = checkInDate.Value;
+            booking.CheckOutDate = checkOutDate.Value;
+
+            // LINQ UPDATE example
+            bookingCrud.UpdateBooking(booking);
+            Navigation.NavigateTo("/bookings");
+        }
+    }
+
+    private void CheckoutBooking()
+    {
+        if (booking != null)
+        {
+            // TRANSACTION-based checkout
+            var result = bookingCrud.CheckoutBooking(booking.BookingID);
+            if (result)
+            {
+                Navigation.NavigateTo("/bookings");
+            }
+        }
+    }
+
+    private void CancelBooking()
+    {
+        if (booking != null)
+        {
+            // TRANSACTION-based cancellation
+            var result = bookingCrud.CancelBooking(booking.BookingID);
+            if (result)
+            {
+                Navigation.NavigateTo("/bookings");
+            }
+        }
+    }
+}
